@@ -28,6 +28,10 @@
 		"version": "npm run lint:fix && git add -A",
 		"postversion": "git push && git push --tags"
 	},
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org/"
+	},
 	"files": [
 		"dist",
 		"cookies",
