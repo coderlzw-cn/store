@@ -6,7 +6,7 @@
 	"types": "dist/types/index.d.ts",
 	"author": "梁志伟",
 	"license": "ISC",
-	"homepage": "https://github.com/coderlzw-cn/web-store#readme",
+	"homepage": "https://github.com/coderlzw-cn/store#readme",
 	"keywords": [
 		"cookie",
 		"localstorage",
@@ -14,7 +14,7 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/coderlzw-cn/web-store"
+		"url": "https://github.com/coderlzw-cn/store"
 	},
 	"scripts": {
 		"build": "rollup -c",
