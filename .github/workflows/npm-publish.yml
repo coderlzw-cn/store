@@ -14,6 +14,7 @@ jobs:
       - uses: actions/setup-node@v4  # 设置 Node.js 环境
         with:
           node-version: 20  # 使用 Node.js 20 版本
+      - run: corepack  enable
       - run: pnpm i  # 安装项目依赖
       - run: npm test  # 运行测试
 
