@@ -1,6 +1,7 @@
 name: npm publish  # 定义工作流名称
 
 on:
+  workflow_dispatch:  # 允许手动触发工作流
   push:
     tags:
       - 'v*.*.*'  # 监听所有以 v 开头的标签，比如 v1.0.0
