@@ -50,9 +50,6 @@ jobs:
         run: ls -al ./dist
       - name: List Publish Directory  # 列出发布目录中的文件
         run: ls -al ./
-      - name: Set version  # 步骤名称
-#        run: npm version ${{ github.ref_name }} --no-git-tag-version  # 使用推送的标签作为版本号，并防止创建新的 Git 标签
-        run: npm version ${{ github.ref_name }}
       - name: Publish to NPM  # 步骤名称
         run: npm publish
         env:
