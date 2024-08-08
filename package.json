@@ -1,6 +1,6 @@
 {
   "name": "@coderlzw/store",
-  "version": "01.0.2-beta.0",
+  "version": "0.0111.2-beta.0",
   "description": "提供基于浏览器的storage、cookie的简易操作，支持storage过期、序列化、返序列化、加密、解密等功能",
   "main": "dist/index.esm.js",
   "types": "dist/types/index.d.ts",
