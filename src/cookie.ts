@@ -1,3 +1,5 @@
+import CryptoJS from "crypto-js";
+
 interface CookieOptions {
     key: string;
     value: string;
@@ -6,6 +8,8 @@ interface CookieOptions {
     path?: string;
     domain?: string;
     secure?: boolean;
+    encrypt?: boolean;
+    secretKey?: string;
 }
 
 interface DefaultCookieOptions {
@@ -23,18 +27,34 @@ const defaultCookieOptions: DefaultCookieOptions = {};
  */
 export const setCookie = (options: CookieOptions): boolean => {
     if (!options.key || !options.value) {
-        console.error("Cookie key and value are required.");
-        return false;
+        throw new Error("Cookie key and value are required.");
     }
 
     let cookieStr = `${encodeURIComponent(options.key)}=${encodeURIComponent(options.value)}`;
 
     if (options.expires) {
-        cookieStr += `;expires=${new Date(options.expires).toUTCString()}`;
+        const expiresDate = new Date(options.expires);
+        if (isNaN(expiresDate.getTime())) {
+            throw new Error("Invalid expires date.");
+        }
+        cookieStr += `;expires=${expiresDate.toUTCString()}`;
     }
+
     if (options.maxAge !== undefined) {
+        if (isNaN(options.maxAge) || options.maxAge < 0) {
+            throw new Error("Invalid maxAge value.");
+        }
         cookieStr += `;max-age=${options.maxAge}`;
     }
+
+    if (options.encrypt) {
+        if (!options.secretKey) {
+            throw new Error("Secret key must be provided for encryption.");
+        }
+        const encryptedValue = CryptoJS.AES.encrypt(options.value, options.secretKey).toString();
+        cookieStr = `${encodeURIComponent(options.key)}=${encodeURIComponent(encryptedValue)}`;
+    }
+
     if (options.path || defaultCookieOptions.path) {
         cookieStr += `;path=${options.path || defaultCookieOptions.path}`;
     }
@@ -58,67 +78,125 @@ export const setCookies = (optionsArray: CookieOptions[]): boolean => optionsArr
 /**
  * 根据键名获取 cookies
  * @param key 键名
+ * @param secretKey 可选，解密密钥
  * @returns 返回 cookies 的值或 null
  */
-export const getCookie = (key: string): string | null => {
+export const getCookie = (key: string, secretKey?: string): string | null => {
+    if (!key) {
+        throw new Error("Cookie key is required.");
+    }
+
     const cookies = document.cookie.split("; ");
     for (const cookie of cookies) {
         const [cookieKey, cookieValue] = cookie.split("=");
         if (decodeURIComponent(cookieKey) === key) {
-            return decodeURIComponent(cookieValue);
+            let value = decodeURIComponent(cookieValue);
+            if (secretKey) {
+                try {
+                    const bytes = CryptoJS.AES.decrypt(value, secretKey);
+                    value = bytes.toString(CryptoJS.enc.Utf8);
+                } catch {
+                    throw new Error("Failed to decrypt cookie value.");
+                }
+            }
+            return value;
         }
     }
-
     return null;
 };
 
 /**
  * 根据键名列表获取 cookies
  * @param keys 键名列表
+ * @param secretKey 可选，解密密钥
  * @returns 返回对应键名的 cookies 值数组
  */
-export const getCookies = (keys: string[]): string[] => {
-    const cookies: string[] = [],
-     cookieArray = document.cookie.split("; ");
+export const getCookies = (keys: string[], secretKey?: string): string[] => {
+    if (!Array.isArray(keys) || keys.some(key => !key)) {
+        throw new Error("Keys must be a non-empty array of strings.");
+    }
+
+    const cookies: string[] = [];
+    const cookieArray = document.cookie.split("; ");
 
     for (const cookie of cookieArray) {
         const [cookieKey, cookieValue] = cookie.split("=");
         if (keys.includes(decodeURIComponent(cookieKey))) {
-            cookies.push(decodeURIComponent(cookieValue));
+            let value = decodeURIComponent(cookieValue);
+            if (secretKey) {
+                const bytes = CryptoJS.AES.decrypt(value, secretKey);
+                value = bytes.toString(CryptoJS.enc.Utf8);
+            }
+            cookies.push(value);
         }
     }
 
     return cookies;
 };
-
 /**
  * 根据键名删除 cookies
  * @param key 键名
  * @returns 是否成功删除
  */
-export const removeCookie = (key: string): boolean => setCookie({
-        key,
-        value: "null",
-        expires: new Date(0).toUTCString(),
-        path: "/"
-    });
+export const removeCookie = (key: string): boolean => {
+    if (!key) {
+        throw new Error("Cookie key is required.");
+    }
+    try {
+        setCookie({
+            key,
+            value: "null",
+            expires: new Date(0).toUTCString(),
+            path: "/"
+        });
+        return true;
+    } catch (e) {
+        console.error("Failed to remove cookie:", e);
+        return false;
+    }
+};
 
 /**
  * 根据键名列表删除 cookies
  * @param keys 键名列表
  * @returns 是否成功删除所有 cookies
  */
-export const removeCookies = (keys: string[]): boolean => keys.every(key => removeCookie(key));
+export const removeCookies = (keys: string[]): boolean => {
+    if (!Array.isArray(keys) || keys.some(key => !key)) {
+        throw new Error("Keys must be a non-empty array of strings.");
+    }
+
+    return keys.every(key => {
+        try {
+            return removeCookie(key);
+        } catch (e) {
+            console.error("Failed to remove cookie:", e);
+            return false;
+        }
+    });
+};
 
 /**
  * 清空所有 cookies
  * @returns 是否成功清空所有 cookies
  */
 export const clearCookies = (): boolean => {
-    const cookies = document.cookie.split("; ");
-    for (const cookie of cookies) {
-        const [key] = cookie.split("=");
-        document.cookie = `${key}=;expires=${new Date(0).toUTCString()};path=/`;
+    try {
+        const cookies = document.cookie.split("; ");
+        if (cookies.length === 0) {
+            return true;
+        }
+
+        cookies.forEach(cookie => {
+            const [key] = cookie.split("=");
+            if (key) {
+                document.cookie = `${key}=;expires=${new Date(0).toUTCString()};path=/`;
+            }
+        });
+
+        return true;
+    } catch (e) {
+        console.error("Failed to clear cookies:", e);
+        return false;
     }
-    return true;
 };

@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
+    "target": "ESNext",
     "declaration": true,
     "declarationMap": false,
     "outDir": "./dist",
@@ -9,7 +10,6 @@
     "declarationDir": "./dist/types",
     "lib": [
       "dom",
-      "dom.iterable",
       "esnext"
     ],
     "allowSyntheticDefaultImports": true,

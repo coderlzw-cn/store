@@ -8,12 +8,8 @@ import {
     setCookies
 } from "../src/cookie";
 
-// 使用本地存储对象模拟document.cookies
-
 beforeEach(() => {
-    // 每次测试前重置模拟cookie存储
     const mockCookieStore: { [key: string]: string } = {};
-    // 用与模拟存储交互的getter和setter覆盖document.cookies
     Object.defineProperty(document, "cookie", {
         get() {
             return Object.entries(mockCookieStore)
@@ -21,8 +17,8 @@ beforeEach(() => {
                 .join("; ");
         },
         set(cookieString: string) {
-            const [keyValue, ...attributes] = cookieString.split(";"),
-             [key, value] = keyValue.split("=").map(decodeURIComponent);
+            const [keyValue, ...attributes] = cookieString.split(";");
+            const [key, value] = keyValue.split("=").map(decodeURIComponent);
             if (attributes.some(attr => attr.trim().startsWith("expires="))) {
                 const expiresAttr = attributes.find(attr => attr.trim().startsWith("expires="));
                 if (expiresAttr && new Date(expiresAttr.trim().split("=")[1]) <= new Date()) {
@@ -68,8 +64,8 @@ describe("Cookie 操作测试", () => {
             }
         ]);
 
-        const result1 = getCookie("testKey1"),
-         result2 = getCookie("testKey2");
+        const result1 = getCookie("testKey1");
+        const result2 = getCookie("testKey2");
         expect(result1).toBe("testValue1");
         expect(result2).toBe("testValue2");
     });
@@ -95,15 +91,11 @@ describe("Cookie 操作测试", () => {
             expires: new Date(Date.now() + 3600 * 1000).toUTCString() // 设置为当前时间+1小时
         });
 
-        // 验证 cookies 已被设置
         expect(getCookie("testKeyToRemove")).toBe("testValueToRemove");
 
-        // 删除 cookies
         removeCookie("testKeyToRemove");
 
-        // 验证 cookies 已被删除
         expect(getCookie("testKeyToRemove")).toBeNull();
-        // 验证 document.cookies 中不再包含该 cookies
         expect(document.cookie.includes("testKeyToRemove")).toBe(false);
     });
 
@@ -119,8 +111,8 @@ describe("Cookie 操作测试", () => {
 
         removeCookies(["testKey1", "testKey2"]);
 
-        const result1 = getCookie("testKey1"),
-         result2 = getCookie("testKey2");
+        const result1 = getCookie("testKey1");
+        const result2 = getCookie("testKey2");
         expect(result1).toBeNull();
         expect(result2).toBeNull();
     });
@@ -137,11 +129,48 @@ describe("Cookie 操作测试", () => {
 
         clearCookies();
 
-        // 验证所有 cookies 已被清空
-        const result1 = getCookie("testKey1"),
-         result2 = getCookie("testKey2");
+        const result1 = getCookie("testKey1");
+        const result2 = getCookie("testKey2");
         expect(result1).toBeNull();
         expect(result2).toBeNull();
         expect(document.cookie).toBe("");
+    });
+
+    test("应正确处理加密 cookies", () => {
+        const secretKey = "mySecretKey";
+
+        setCookie({
+            key: "encryptedKey",
+            value: "encryptedValue",
+            encrypt: true,
+            secretKey,
+            expires: "Fri, 01 Jan 2025 00:00:00 GMT"
+        });
+
+        const encryptedValue = getCookie("encryptedKey", secretKey);
+        expect(encryptedValue).toBe("encryptedValue");
+    });
+
+    test("应正确处理无效的 cookie 选项", () => {
+        // 设置时缺少必需选项
+        expect(() => setCookie({ key: "", value: "" })).toThrowError("Cookie key and value are required.");
+
+        // 设置时使用无效的过期时间
+        // 设置时使用无效的过期时间
+        expect(() => setCookie({
+            key: "invalidExpire",
+            value: "value",
+            expires: "invalid-date"
+        })).toThrowError("Invalid expires date.");
+    });
+
+    test("应正确处理不带过期时间的 cookie", () => {
+        setCookie({
+            key: "noExpireKey",
+            value: "noExpireValue"
+        });
+
+        const result = getCookie("noExpireKey");
+        expect(result).toBe("noExpireValue");
     });
 });
