@@ -20,7 +20,9 @@
     "build": "rollup -c",
     "lint:fix": "eslint --fix",
     "test": "jest",
-    "preversion": "npm run lint:fix && npm run build && npm run test"
+    "preversion": "npm run lint:fix && npm run test",
+    "version": "npm run build && git add .",
+    "postversion": "git push && git push --tags"
   },
   "publishConfig": {
     "access": "public",
